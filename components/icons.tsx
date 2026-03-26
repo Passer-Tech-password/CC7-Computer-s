@@ -108,6 +108,8 @@ export function UserIcon({ title = "User", ...props }: IconProps) {
     </svg>
   );
 }
+
+export function WhatsAppIcon({ title = "WhatsApp", ...props }: IconProps) {
   return (
     <svg viewBox="0 0 24 24" fill="none" aria-hidden={title ? undefined : true} {...props}>
       {title ? <title>{title}</title> : null}
@@ -166,4 +168,3 @@ export function SpinnerIcon({ title = "Loading", ...props }: IconProps) {
     </svg>
   );
 }
-
