@@ -1,0 +1,75 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Brand tokens (required) */
+:root {
+  --primary-red: #e63946;
+  --primary-blue: #4361ee;
+  --primary-yellow: #f4d35e;
+  --dark: #1d3557;
+  --light: #f1faee;
+
+  --bg: #ffffff;
+  --fg: var(--dark);
+  --card: rgba(241, 250, 238, 0.7);
+  --border: rgba(29, 53, 87, 0.12);
+}
+
+.dark {
+  --bg: #0b1220;
+  --fg: #eaf2ff;
+  --card: rgba(29, 53, 87, 0.35);
+  --border: rgba(241, 250, 238, 0.18);
+}
+
+@layer base {
+  html {
+    color-scheme: light;
+  }
+
+  html.dark {
+    color-scheme: dark;
+  }
+
+  body {
+    @apply min-h-dvh bg-white text-dark antialiased;
+    background: radial-gradient(1200px 500px at 10% 0%, rgba(67, 97, 238, 0.18), transparent 60%),
+      radial-gradient(900px 450px at 100% 10%, rgba(230, 57, 70, 0.18), transparent 55%),
+      radial-gradient(800px 350px at 60% 100%, rgba(244, 211, 94, 0.22), transparent 55%),
+      var(--bg);
+    color: var(--fg);
+  }
+}
+
+@layer components {
+  .container-page {
+    @apply mx-auto w-full max-w-6xl px-4;
+  }
+
+  .card {
+    @apply rounded-2xl border p-4 shadow-sm backdrop-blur;
+    background: var(--card);
+    border-color: var(--border);
+  }
+
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-full px-4 py-2 text-sm font-semibold transition;
+  }
+
+  .btn-primary {
+    @apply btn text-white shadow-glow;
+    background: linear-gradient(135deg, var(--primary-blue), var(--primary-red));
+  }
+
+  .btn-ghost {
+    @apply btn border;
+    border-color: var(--border);
+    background: rgba(255, 255, 255, 0.45);
+  }
+
+  .dark .btn-ghost {
+    background: rgba(29, 53, 87, 0.25);
+  }
+}
+
