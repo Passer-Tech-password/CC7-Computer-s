@@ -2,11 +2,15 @@
   "name": "cc7-computers",
   "version": "0.1.0",
   "private": true,
+  "packageManager": "npm@10.2.0",
+  "engines": {
+    "node": ">=20 <23"
+  },
   "scripts": {
-    "dev": "next dev --turbopack",
-    "build": "next build",
-    "start": "next start",
-    "lint": "next lint",
+    "dev": "node node_modules/next/dist/bin/next dev --turbopack",
+    "build": "node node_modules/next/dist/bin/next build",
+    "start": "node node_modules/next/dist/bin/next start",
+    "lint": "node node_modules/next/dist/bin/next lint",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
