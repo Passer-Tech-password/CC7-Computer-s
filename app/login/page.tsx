@@ -3,8 +3,8 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import * as FirebaseAuthModule from "firebase/auth";
-import * as FirebaseFirestoreModule from "firebase/firestore";
+import { signInWithEmailAndPassword, signInWithPopup, GoogleAuthProvider } from "firebase/auth";
+import { doc, getDoc, setDoc } from "firebase/firestore";
 import { getFirebaseClient } from "@/lib/firebase";
 import { GoogleIcon, SpinnerIcon } from "@/components/icons";
 
@@ -22,7 +22,7 @@ export default function LoginPage() {
 
     try {
       const { auth } = getFirebaseClient();
-      await FirebaseAuthModule.signInWithEmailAndPassword(auth, email, password);
+      await signInWithEmailAndPassword(auth, email, password);
       router.push("/dashboard");
     } catch (err: unknown) {
       console.error(err);
@@ -39,15 +39,15 @@ export default function LoginPage() {
 
     try {
       const { auth, db } = getFirebaseClient();
-      const provider = new FirebaseAuthModule.GoogleAuthProvider();
-      const result = await FirebaseAuthModule.signInWithPopup(auth, provider);
+      const provider = new GoogleAuthProvider();
+      const result = await signInWithPopup(auth, provider);
       
       // Check if user document exists, if not create one
-      const userRef = FirebaseFirestoreModule.doc(db, "users", result.user.uid);
-      const userDoc = await FirebaseFirestoreModule.getDoc(userRef);
+      const userRef = doc(db, "users", result.user.uid);
+      const userDoc = await getDoc(userRef);
       
       if (!userDoc.exists()) {
-        await FirebaseFirestoreModule.setDoc(userRef, {
+        await setDoc(userRef, {
           uid: result.user.uid,
           email: result.user.email,
           displayName: result.user.displayName || "Customer",

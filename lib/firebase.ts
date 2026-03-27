@@ -1,13 +1,9 @@
 "use client";
 
-import type { FirebaseApp } from "firebase/app";
-import type { Auth } from "firebase/auth";
-import type { Firestore } from "firebase/firestore";
-import type { FirebaseStorage } from "firebase/storage";
-import * as FirebaseAppModule from "firebase/app";
-import * as FirebaseAuthModule from "firebase/auth";
-import * as FirebaseFirestoreModule from "firebase/firestore";
-import * as FirebaseStorageModule from "firebase/storage";
+import { FirebaseApp, getApp, getApps, initializeApp } from "firebase/app";
+import { Auth, getAuth } from "firebase/auth";
+import { Firestore, getFirestore } from "firebase/firestore";
+import { FirebaseStorage, getStorage } from "firebase/storage";
 
 type FirebaseClient = {
   app: FirebaseApp;
@@ -49,15 +45,13 @@ export function getFirebaseClient(): FirebaseClient {
   const config = getFirebaseConfig();
   assertFirebaseConfig(config);
 
-  const app = FirebaseAppModule.getApps().length > 0
-    ? FirebaseAppModule.getApp()
-    : FirebaseAppModule.initializeApp(config);
+  const app = getApps().length > 0 ? getApp() : initializeApp(config);
 
   cachedClient = {
     app,
-    auth: FirebaseAuthModule.getAuth(app),
-    db: FirebaseFirestoreModule.getFirestore(app),
-    storage: FirebaseStorageModule.getStorage(app)
+    auth: getAuth(app),
+    db: getFirestore(app),
+    storage: getStorage(app)
   };
 
   return cachedClient;

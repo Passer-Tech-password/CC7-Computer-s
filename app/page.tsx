@@ -3,43 +3,9 @@ import { Hero } from "@/components/Hero";
 import { ProductCard } from "@/components/ProductCard";
 import { WhyChooseUs } from "@/components/WhyChooseUs";
 import { RepairProcess } from "@/components/RepairProcess";
-import { Product } from "@/types/product";
+import { PRODUCTS } from "@/lib/products";
 
-// Mock data for the homepage
-const HOT_DEALS: Product[] = [
-  {
-    id: "1",
-    name: "MacBook Pro M2 2022 (13-inch, 8GB RAM, 256GB SSD)",
-    category: "laptops",
-    priceNgn: 1250000,
-    inStock: true,
-    createdAtMs: Date.now(),
-  },
-  {
-    id: "2",
-    name: "HP EliteBook 840 G8 (Intel Core i7, 16GB RAM, 512GB SSD)",
-    category: "laptops",
-    priceNgn: 450000,
-    inStock: true,
-    createdAtMs: Date.now(),
-  },
-  {
-    id: "3",
-    name: "Samsung 1TB T7 Portable SSD",
-    category: "accessories",
-    priceNgn: 85000,
-    inStock: true,
-    createdAtMs: Date.now(),
-  },
-  {
-    id: "4",
-    name: "Dell XPS 15 9510 (Intel Core i9, 32GB RAM, 1TB SSD)",
-    category: "laptops",
-    priceNgn: 1100000,
-    inStock: false,
-    createdAtMs: Date.now(),
-  },
-];
+const HOT_DEALS = PRODUCTS.slice(0, 4);
 
 export default function HomePage() {
   return (
@@ -89,4 +55,3 @@ export default function HomePage() {
     </div>
   );
 }
-

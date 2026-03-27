@@ -3,8 +3,8 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import * as FirebaseAuthModule from "firebase/auth";
-import * as FirebaseFirestoreModule from "firebase/firestore";
+import { createUserWithEmailAndPassword, signInWithPopup, GoogleAuthProvider } from "firebase/auth";
+import { doc, setDoc, getDoc } from "firebase/firestore";
 import { getFirebaseClient } from "@/lib/firebase";
 import { UserRole } from "@/types/user";
 import { GoogleIcon, SpinnerIcon } from "@/components/icons";
@@ -25,10 +25,10 @@ export default function RegisterPage() {
 
     try {
       const { auth, db } = getFirebaseClient();
-      const result = await FirebaseAuthModule.createUserWithEmailAndPassword(auth, email, password);
+      const result = await createUserWithEmailAndPassword(auth, email, password);
       
       // Save user profile with selected role
-      await FirebaseFirestoreModule.setDoc(FirebaseFirestoreModule.doc(db, "users", result.user.uid), {
+      await setDoc(doc(db, "users", result.user.uid), {
         uid: result.user.uid,
         email: result.user.email,
         displayName: name,
@@ -52,14 +52,14 @@ export default function RegisterPage() {
 
     try {
       const { auth, db } = getFirebaseClient();
-      const provider = new FirebaseAuthModule.GoogleAuthProvider();
-      const result = await FirebaseAuthModule.signInWithPopup(auth, provider);
+      const provider = new GoogleAuthProvider();
+      const result = await signInWithPopup(auth, provider);
       
-      const userRef = FirebaseFirestoreModule.doc(db, "users", result.user.uid);
-      const userDoc = await FirebaseFirestoreModule.getDoc(userRef);
+      const userRef = doc(db, "users", result.user.uid);
+      const userDoc = await getDoc(userRef);
       
       if (!userDoc.exists()) {
-        await FirebaseFirestoreModule.setDoc(userRef, {
+        await setDoc(userRef, {
           uid: result.user.uid,
           email: result.user.email,
           displayName: result.user.displayName || "User",

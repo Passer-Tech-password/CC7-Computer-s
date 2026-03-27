@@ -1,11 +1,10 @@
 "use client";
 
 import { createContext, useContext, useEffect, useState } from "react";
+import { onAuthStateChanged, signOut, User as FirebaseUser } from "firebase/auth";
 import { doc, getDoc } from "firebase/firestore";
 import { getFirebaseClient } from "@/lib/firebase";
 import { UserData } from "@/types/user";
-import type { User as FirebaseUser } from "firebase/auth";
-import * as FirebaseAuthModule from "firebase/auth";
 
 interface AuthContextType {
   user: FirebaseUser | null;
@@ -33,7 +32,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       const { auth, db } = getFirebaseClient();
 
-      const unsubscribe = FirebaseAuthModule.onAuthStateChanged(auth, async (firebaseUser) => {
+      const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
         if (firebaseUser) {
           setUser(firebaseUser);
           
@@ -67,7 +66,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const logout = async () => {
     try {
       const { auth } = getFirebaseClient();
-      await FirebaseAuthModule.signOut(auth);
+      await signOut(auth);
     } catch (error) {
       console.error("Error signing out:", error);
     }

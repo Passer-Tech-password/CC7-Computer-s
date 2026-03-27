@@ -5,6 +5,7 @@ import { ThemeProvider } from "@/components/ThemeProvider";
 import { Navbar } from "@/components/Navbar";
 import { WhatsAppFab } from "@/components/WhatsAppFab";
 import { AuthProvider } from "@/contexts/AuthContext";
+import { CartProvider } from "@/contexts/CartContext";
 
 const poppins = Poppins({
   weight: ["400", "500", "600", "700", "800", "900"],
@@ -27,11 +28,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en" className={poppins.variable} suppressHydrationWarning>
       <body className="font-poppins bg-light dark:bg-[#0b1220] text-dark dark:text-light antialiased">
         <AuthProvider>
-          <ThemeProvider>
-            <Navbar />
-            <main className="min-h-screen">{children}</main>
-            <WhatsAppFab />
-          </ThemeProvider>
+          <CartProvider>
+            <ThemeProvider>
+              <Navbar />
+              <main className="min-h-screen">{children}</main>
+              <WhatsAppFab />
+            </ThemeProvider>
+          </CartProvider>
         </AuthProvider>
       </body>
     </html>
