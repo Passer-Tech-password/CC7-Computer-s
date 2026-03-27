@@ -11,6 +11,9 @@ export default function CartPage() {
 
   const isEmpty = items.length === 0;
   const subtotalLabel = useMemo(() => formatNgn(subtotalNgn), [subtotalNgn]);
+  const deliveryFeeNgn = useMemo(() => (subtotalNgn >= 500000 ? 0 : items.length > 0 ? 3500 : 0), [subtotalNgn, items.length]);
+  const deliveryLabel = useMemo(() => (deliveryFeeNgn === 0 ? "Free" : formatNgn(deliveryFeeNgn)), [deliveryFeeNgn]);
+  const totalLabel = useMemo(() => formatNgn(subtotalNgn + deliveryFeeNgn), [subtotalNgn, deliveryFeeNgn]);
 
   return (
     <div className="container-page py-8">
@@ -128,16 +131,22 @@ export default function CartPage() {
                 <span>Subtotal</span>
                 <span className="text-base font-black text-primary-red">{subtotalLabel}</span>
               </div>
-              <div className="mt-2 text-xs font-semibold text-dark/60 dark:text-light/60">
-                Delivery and taxes are calculated at checkout.
+              <div className="mt-2 flex items-center justify-between text-sm font-bold text-dark/70 dark:text-light/70">
+                <span>Delivery</span>
+                <span className="text-sm font-black text-primary-blue">{deliveryLabel}</span>
+              </div>
+              <div className="mt-3 h-px w-full bg-dark/10 dark:bg-light/10" />
+              <div className="mt-3 flex items-center justify-between text-lg font-black">
+                <span className="text-dark dark:text-light">Total</span>
+                <span className="text-primary-red">{totalLabel}</span>
               </div>
 
-              <button
-                type="button"
+              <Link
+                href="/checkout"
                 className="mt-6 btn inline-flex w-full rounded-2xl bg-primary-red py-4 text-base font-black text-white hover:brightness-110"
               >
-                Checkout
-              </button>
+                Proceed to Checkout
+              </Link>
 
               <Link
                 href="/contact"

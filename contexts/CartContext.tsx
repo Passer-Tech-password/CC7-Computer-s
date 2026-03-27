@@ -21,6 +21,7 @@ type CartContextValue = {
   removeItem: (productId: string) => void;
   setQuantity: (productId: string, quantity: number) => void;
   clearCart: () => void;
+  setItemsDirect: (next: CartItem[]) => void;
 };
 
 // Local-first cart persistence (later can be upgraded to Firestore per user).
@@ -114,7 +115,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   const subtotalNgn = useMemo(() => items.reduce((sum, i) => sum + i.priceNgn * i.quantity, 0), [items]);
 
   const value = useMemo<CartContextValue>(
-    () => ({ items, itemCount, subtotalNgn, addItem, removeItem, setQuantity, clearCart }),
+    () => ({ items, itemCount, subtotalNgn, addItem, removeItem, setQuantity, clearCart, setItemsDirect: setItems }),
     [items, itemCount, subtotalNgn, addItem, removeItem, setQuantity, clearCart]
   );
 
