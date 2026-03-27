@@ -16,8 +16,8 @@ type NavItem = {
 const NAV_ITEMS: NavItem[] = [
   { href: "/", label: "Home" },
   { href: "/shop", label: "Shop" },
-  { href: "/repairs", label: "Services" },
-  { href: "/track-repair", label: "Track Repair" },
+  { href: "/services", label: "Services" },
+  { href: "/repair/track", label: "Track Repair" },
   { href: "/contact", label: "Contact" }
 ];
 
@@ -178,4 +178,3 @@ export function Navbar() {
     </header>
   );
 }
-
