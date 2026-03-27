@@ -1,9 +1,9 @@
 "use client";
 
-import { FirebaseApp, getApp, getApps, initializeApp } from "firebase/app";
-import { Auth, getAuth } from "firebase/auth";
-import { Firestore, getFirestore } from "firebase/firestore";
-import { FirebaseStorage, getStorage } from "firebase/storage";
+import type { FirebaseApp } from "firebase/app";
+import type { Auth } from "firebase/auth";
+import type { Firestore } from "firebase/firestore";
+import type { FirebaseStorage } from "firebase/storage";
 
 type FirebaseClient = {
   app: FirebaseApp;
@@ -13,6 +13,7 @@ type FirebaseClient = {
 };
 
 let cachedClient: FirebaseClient | null = null;
+let initPromise: Promise<FirebaseClient> | null = null;
 
 function getFirebaseConfig() {
   return {
@@ -39,20 +40,31 @@ function assertFirebaseConfig(config: ReturnType<typeof getFirebaseConfig>) {
   }
 }
 
-export function getFirebaseClient(): FirebaseClient {
+export async function getFirebaseClientAsync(): Promise<FirebaseClient> {
   if (cachedClient) return cachedClient;
+  if (initPromise) return initPromise;
 
-  const config = getFirebaseConfig();
-  assertFirebaseConfig(config);
+  initPromise = (async () => {
+    const [{ getApps, getApp, initializeApp }, { getAuth }, { getFirestore }, { getStorage }] =
+      await Promise.all([
+        import("firebase/app"),
+        import("firebase/auth"),
+        import("firebase/firestore"),
+        import("firebase/storage")
+      ]);
 
-  const app = getApps().length > 0 ? getApp() : initializeApp(config);
+    const config = getFirebaseConfig();
+    assertFirebaseConfig(config);
 
-  cachedClient = {
-    app,
-    auth: getAuth(app),
-    db: getFirestore(app),
-    storage: getStorage(app)
-  };
+    const app = getApps().length > 0 ? getApp() : initializeApp(config);
+    cachedClient = {
+      app,
+      auth: getAuth(app),
+      db: getFirestore(app),
+      storage: getStorage(app)
+    };
+    return cachedClient;
+  })();
 
-  return cachedClient;
+  return initPromise;
 }

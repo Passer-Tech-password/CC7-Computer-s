@@ -3,9 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { signInWithEmailAndPassword, signInWithPopup, GoogleAuthProvider } from "firebase/auth";
-import { doc, getDoc, setDoc } from "firebase/firestore";
-import { getFirebaseClient } from "@/lib/firebase";
+import { getFirebaseClientAsync } from "@/lib/firebase";
 import { GoogleIcon, SpinnerIcon } from "@/components/icons";
 
 export default function LoginPage() {
@@ -21,7 +19,8 @@ export default function LoginPage() {
     setError(null);
 
     try {
-      const { auth } = getFirebaseClient();
+      const { auth } = await getFirebaseClientAsync();
+      const { signInWithEmailAndPassword } = await import("firebase/auth");
       await signInWithEmailAndPassword(auth, email, password);
       router.push("/dashboard");
     } catch (err: unknown) {
@@ -38,11 +37,13 @@ export default function LoginPage() {
     setError(null);
 
     try {
-      const { auth, db } = getFirebaseClient();
+      const { auth, db } = await getFirebaseClientAsync();
+      const { GoogleAuthProvider, signInWithPopup } = await import("firebase/auth");
       const provider = new GoogleAuthProvider();
       const result = await signInWithPopup(auth, provider);
       
       // Check if user document exists, if not create one
+      const { doc, getDoc, setDoc } = await import("firebase/firestore");
       const userRef = doc(db, "users", result.user.uid);
       const userDoc = await getDoc(userRef);
       

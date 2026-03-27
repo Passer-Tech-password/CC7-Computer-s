@@ -3,9 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { createUserWithEmailAndPassword, signInWithPopup, GoogleAuthProvider } from "firebase/auth";
-import { doc, setDoc, getDoc } from "firebase/firestore";
-import { getFirebaseClient } from "@/lib/firebase";
+import { getFirebaseClientAsync } from "@/lib/firebase";
 import { UserRole } from "@/types/user";
 import { GoogleIcon, SpinnerIcon } from "@/components/icons";
 
@@ -24,10 +22,12 @@ export default function RegisterPage() {
     setError(null);
 
     try {
-      const { auth, db } = getFirebaseClient();
+      const { auth, db } = await getFirebaseClientAsync();
+      const { createUserWithEmailAndPassword } = await import("firebase/auth");
       const result = await createUserWithEmailAndPassword(auth, email, password);
       
       // Save user profile with selected role
+      const { doc, setDoc } = await import("firebase/firestore");
       await setDoc(doc(db, "users", result.user.uid), {
         uid: result.user.uid,
         email: result.user.email,
@@ -51,10 +51,12 @@ export default function RegisterPage() {
     setError(null);
 
     try {
-      const { auth, db } = getFirebaseClient();
+      const { auth, db } = await getFirebaseClientAsync();
+      const { GoogleAuthProvider, signInWithPopup } = await import("firebase/auth");
       const provider = new GoogleAuthProvider();
       const result = await signInWithPopup(auth, provider);
       
+      const { doc, setDoc, getDoc } = await import("firebase/firestore");
       const userRef = doc(db, "users", result.user.uid);
       const userDoc = await getDoc(userRef);
       

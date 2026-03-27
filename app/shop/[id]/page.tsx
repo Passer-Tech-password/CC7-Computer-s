@@ -7,8 +7,9 @@ export function generateStaticParams() {
   return PRODUCTS.map((p) => ({ id: p.id }));
 }
 
-export function generateMetadata({ params }: { params: { id: string } }): Metadata {
-  const product = getProductById(params.id);
+export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
+  const { id } = await params;
+  const product = getProductById(id);
   if (!product) return {};
   return {
     title: `${product.brand} ${product.name}`,
