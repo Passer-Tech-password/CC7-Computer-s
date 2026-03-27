@@ -3,12 +3,8 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { 
-  createUserWithEmailAndPassword,
-  signInWithPopup,
-  GoogleAuthProvider
-} from "firebase/auth";
-import { doc, setDoc, getDoc } from "firebase/firestore";
+import * as FirebaseAuthModule from "firebase/auth";
+import * as FirebaseFirestoreModule from "firebase/firestore";
 import { getFirebaseClient } from "@/lib/firebase";
 import { UserRole } from "@/types/user";
 import { GoogleIcon, SpinnerIcon } from "@/components/icons";
@@ -29,10 +25,10 @@ export default function RegisterPage() {
 
     try {
       const { auth, db } = getFirebaseClient();
-      const result = await createUserWithEmailAndPassword(auth, email, password);
+      const result = await FirebaseAuthModule.createUserWithEmailAndPassword(auth, email, password);
       
       // Save user profile with selected role
-      await setDoc(doc(db, "users", result.user.uid), {
+      await FirebaseFirestoreModule.setDoc(FirebaseFirestoreModule.doc(db, "users", result.user.uid), {
         uid: result.user.uid,
         email: result.user.email,
         displayName: name,
@@ -41,9 +37,10 @@ export default function RegisterPage() {
       });
 
       router.push("/dashboard");
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error(err);
-      setError(err.message || "Failed to create account.");
+      const message = err instanceof Error ? err.message : "Failed to create account.";
+      setError(message);
     } finally {
       setLoading(false);
     }
@@ -55,14 +52,14 @@ export default function RegisterPage() {
 
     try {
       const { auth, db } = getFirebaseClient();
-      const provider = new GoogleAuthProvider();
-      const result = await signInWithPopup(auth, provider);
+      const provider = new FirebaseAuthModule.GoogleAuthProvider();
+      const result = await FirebaseAuthModule.signInWithPopup(auth, provider);
       
-      const userRef = doc(db, "users", result.user.uid);
-      const userDoc = await getDoc(userRef);
+      const userRef = FirebaseFirestoreModule.doc(db, "users", result.user.uid);
+      const userDoc = await FirebaseFirestoreModule.getDoc(userRef);
       
       if (!userDoc.exists()) {
-        await setDoc(userRef, {
+        await FirebaseFirestoreModule.setDoc(userRef, {
           uid: result.user.uid,
           email: result.user.email,
           displayName: result.user.displayName || "User",
@@ -72,9 +69,10 @@ export default function RegisterPage() {
       }
       
       router.push("/dashboard");
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error(err);
-      setError(err.message || "Failed to sign up with Google.");
+      const message = err instanceof Error ? err.message : "Failed to sign up with Google.";
+      setError(message);
     } finally {
       setLoading(false);
     }

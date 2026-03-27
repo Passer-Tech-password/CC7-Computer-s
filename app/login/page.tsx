@@ -3,12 +3,8 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { 
-  signInWithEmailAndPassword, 
-  signInWithPopup, 
-  GoogleAuthProvider 
-} from "firebase/auth";
-import { doc, getDoc, setDoc } from "firebase/firestore";
+import * as FirebaseAuthModule from "firebase/auth";
+import * as FirebaseFirestoreModule from "firebase/firestore";
 import { getFirebaseClient } from "@/lib/firebase";
 import { GoogleIcon, SpinnerIcon } from "@/components/icons";
 
@@ -26,11 +22,12 @@ export default function LoginPage() {
 
     try {
       const { auth } = getFirebaseClient();
-      await signInWithEmailAndPassword(auth, email, password);
+      await FirebaseAuthModule.signInWithEmailAndPassword(auth, email, password);
       router.push("/dashboard");
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error(err);
-      setError(err.message || "Failed to login. Please check your credentials.");
+      const message = err instanceof Error ? err.message : "Failed to login. Please check your credentials.";
+      setError(message);
     } finally {
       setLoading(false);
     }
@@ -42,15 +39,15 @@ export default function LoginPage() {
 
     try {
       const { auth, db } = getFirebaseClient();
-      const provider = new GoogleAuthProvider();
-      const result = await signInWithPopup(auth, provider);
+      const provider = new FirebaseAuthModule.GoogleAuthProvider();
+      const result = await FirebaseAuthModule.signInWithPopup(auth, provider);
       
       // Check if user document exists, if not create one
-      const userRef = doc(db, "users", result.user.uid);
-      const userDoc = await getDoc(userRef);
+      const userRef = FirebaseFirestoreModule.doc(db, "users", result.user.uid);
+      const userDoc = await FirebaseFirestoreModule.getDoc(userRef);
       
       if (!userDoc.exists()) {
-        await setDoc(userRef, {
+        await FirebaseFirestoreModule.setDoc(userRef, {
           uid: result.user.uid,
           email: result.user.email,
           displayName: result.user.displayName || "Customer",
@@ -60,9 +57,10 @@ export default function LoginPage() {
       }
       
       router.push("/dashboard");
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error(err);
-      setError(err.message || "Failed to login with Google.");
+      const message = err instanceof Error ? err.message : "Failed to login with Google.";
+      setError(message);
     } finally {
       setLoading(false);
     }

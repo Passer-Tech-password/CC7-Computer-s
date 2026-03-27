@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { Product } from "@/types/product";
 
 export function ProductCard({ product }: { product: Product }) {
