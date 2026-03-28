@@ -26,7 +26,7 @@ export function SuccessClient() {
 
           <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-2">
             <Link
-              href="/dashboard"
+              href="/account"
               className="btn inline-flex w-full rounded-2xl bg-primary-blue px-6 py-4 text-base font-black text-white hover:brightness-110"
             >
               View My Orders
@@ -43,4 +43,3 @@ export function SuccessClient() {
     </div>
   );
 }
-

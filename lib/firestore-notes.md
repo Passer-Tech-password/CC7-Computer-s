@@ -1,6 +1,8 @@
 # Firestore Rules (example)
 
-// Allow authenticated users to read/write their own orders and profile.
+// Example rules:
+// - Customers can read/write their own profile + their own orders/repair jobs
+// - Staff/Admin/Technician can read/write all orders, repair jobs, and products
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
@@ -9,6 +11,10 @@ service cloud.firestore {
     }
     function isOwner(uid) {
       return isSignedIn() && request.auth.uid == uid;
+    }
+    function isStaff() {
+      return isSignedIn()
+        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['staff', 'admin', 'technician'];
     }
 
     // Users collection
@@ -19,18 +25,22 @@ service cloud.firestore {
 
     // Orders collection
     match /orders/{orderId} {
-      allow read, write: if isSignedIn() && request.resource.data.userUid == request.auth.uid;
+      allow read: if isStaff() || (isSignedIn() && resource.data.userUid == request.auth.uid);
+      allow create: if isStaff() || (isSignedIn() && request.resource.data.userUid == request.auth.uid);
+      allow update, delete: if isStaff();
     }
 
-    // Products read-only
+    // Products
     match /products/{productId} {
       allow read: if true;
-      allow write: if false;
+      allow write: if isStaff();
     }
 
-    // Repair jobs readable by owner
+    // Repair jobs
     match /repair_jobs/{jobId} {
-      allow read, write: if isSignedIn() && request.resource.data.userUid == request.auth.uid;
+      allow read: if isStaff() || (isSignedIn() && resource.data.userUid == request.auth.uid);
+      allow create: if isStaff() || (isSignedIn() && request.resource.data.userUid == request.auth.uid);
+      allow update, delete: if isStaff();
     }
   }
 }
@@ -53,4 +63,3 @@ service cloud.firestore {
 //   inStock: true,
 //   createdAt: serverTimestamp()
 // }
-

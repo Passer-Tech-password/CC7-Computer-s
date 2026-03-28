@@ -6,6 +6,7 @@ import { useMemo, useState, useRef, useEffect } from "react";
 import { useCart } from "@/hooks/useCart";
 import { useTheme } from "@/hooks/useTheme";
 import { useAuth } from "@/contexts/AuthContext";
+import { useRole } from "@/hooks/useRole";
 import { CartIcon, CloseIcon, MenuIcon, MoonIcon, SunIcon, SearchIcon, UserIcon } from "@/components/icons";
 
 type NavItem = {
@@ -46,6 +47,7 @@ export function Navbar() {
   const { itemCount } = useCart();
   const { theme, toggleTheme } = useTheme();
   const { user, logout } = useAuth();
+  const { isStaff } = useRole();
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -122,11 +124,11 @@ export function Navbar() {
                 <div className="absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-white dark:bg-dark ring-1 ring-black ring-opacity-5 divide-y divide-dark/10 dark:divide-light/10 focus:outline-none">
                   <div className="py-1">
                     <Link
-                      href="/dashboard"
+                      href={isStaff ? "/dashboard" : "/account"}
                       onClick={() => setDropdownOpen(false)}
                       className="block px-4 py-2 text-sm text-dark dark:text-light hover:bg-dark/5 dark:hover:bg-light/5"
                     >
-                      Profile & Orders
+                      {isStaff ? "Staff Dashboard" : "My Account"}
                     </Link>
                   </div>
                   <div className="py-1">
