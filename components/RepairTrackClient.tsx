@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { RepairStepper } from "@/components/RepairStepper";
 import { getRepairJob, getRepairStageIndex, REPAIR_STAGES } from "@/lib/repairs";
+import { getFirebaseClientAsync } from "@/lib/firebase";
 
 function formatDate(iso: string) {
   try {
@@ -16,6 +17,30 @@ function formatDate(iso: string) {
 
 function normalizePhone(value: string) {
   return value.replace(/[^\d]/g, "");
+}
+
+type TrackedJob = {
+  jobNumber: string;
+  deviceType: string;
+  brand: string;
+  model: string;
+  serialNumber?: string;
+  issueSummary: string;
+  stage: "diagnosis" | "repairing" | "testing" | "ready";
+  estimatedCompletionISO: string;
+  technicianName: string;
+};
+
+function mapStatusToStage(status: string): TrackedJob["stage"] {
+  if (status === "repairing") return "repairing";
+  if (status === "ready" || status === "completed") return "ready";
+  if (status === "testing") return "testing";
+  return "diagnosis";
+}
+
+function addDaysISO(createdAtMs: number, days: number) {
+  const date = new Date(createdAtMs + days * 86400000);
+  return date.toISOString().slice(0, 10);
 }
 
 function StatusBadge({ stage }: { stage: string }) {
@@ -38,6 +63,8 @@ export function RepairTrackClient() {
   const searchParams = useSearchParams();
   const [jobNumber, setJobNumber] = useState("");
   const [submitted, setSubmitted] = useState<string | null>(null);
+  const [jobLoading, setJobLoading] = useState(false);
+  const [liveJob, setLiveJob] = useState<TrackedJob | null>(null);
 
   useEffect(() => {
     const job = searchParams.get("job");
@@ -47,7 +74,50 @@ export function RepairTrackClient() {
     }
   }, [searchParams]);
 
-  const job = useMemo(() => (submitted ? getRepairJob(submitted) : null), [submitted]);
+  useEffect(() => {
+    (async () => {
+      if (!submitted) {
+        setLiveJob(null);
+        return;
+      }
+      setJobLoading(true);
+      try {
+        const normalized = submitted.trim().toUpperCase();
+        const { db } = await getFirebaseClientAsync();
+        const { collection, getDocs, limit, query, where } = await import("firebase/firestore");
+        const snap = await getDocs(query(collection(db, "repair_jobs"), where("jobNumber", "==", normalized), limit(1)));
+        const doc = snap.docs[0];
+        if (!doc) {
+          setLiveJob(null);
+          return;
+        }
+        const data = doc.data() as Record<string, unknown>;
+        const createdAtMs = typeof data.createdAtMs === "number" ? data.createdAtMs : Date.now();
+        const status = typeof data.status === "string" ? data.status : "pending";
+        setLiveJob({
+          jobNumber: normalized,
+          deviceType: typeof data.deviceType === "string" ? data.deviceType : "Device",
+          brand: typeof data.brand === "string" ? data.brand : "Brand",
+          model: typeof data.model === "string" ? data.model : "Model",
+          serialNumber: typeof data.serialNumber === "string" ? data.serialNumber : undefined,
+          issueSummary: typeof data.beforeNotes === "string" ? data.beforeNotes : "Repair in progress",
+          stage: mapStatusToStage(status),
+          estimatedCompletionISO: typeof data.estimatedCompletionISO === "string" ? data.estimatedCompletionISO : addDaysISO(createdAtMs, 3),
+          technicianName: typeof data.technicianName === "string" && data.technicianName ? data.technicianName : "CC7 Technician"
+        });
+      } catch (e) {
+        console.error(e);
+        setLiveJob(null);
+      } finally {
+        setJobLoading(false);
+      }
+    })();
+  }, [submitted]);
+
+  const job = useMemo(() => {
+    if (!submitted) return null;
+    return liveJob ?? getRepairJob(submitted);
+  }, [submitted, liveJob]);
 
   const stepperSteps = useMemo(() => REPAIR_STAGES.map((s) => ({ key: s.key, label: s.label })), []);
 
@@ -176,7 +246,9 @@ export function RepairTrackClient() {
             </div>
           ) : (
             <div className="card">
-              <h2 className="text-xl font-extrabold text-dark dark:text-light">Job not found</h2>
+              <h2 className="text-xl font-extrabold text-dark dark:text-light">
+                {jobLoading ? "Searching…" : "Job not found"}
+              </h2>
               <p className="mt-2 text-sm font-semibold text-dark/70 dark:text-light/70">
                 Check the job number and try again. If you’re stuck, message CC7 for help.
               </p>
@@ -213,4 +285,3 @@ export function RepairTrackClient() {
     </div>
   );
 }
-

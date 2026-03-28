@@ -69,8 +69,7 @@ export default function DashboardCustomersPage() {
         </p>
       </div>
 
-      <DataTable rows={rows} columns={columns} emptyLabel={loading ? "Loading…" : "No users found."} />
+      <DataTable rows={rows} columns={columns} emptyLabel={loading ? "Loading…" : "No users found."} loading={loading} />
     </div>
   );
 }
-

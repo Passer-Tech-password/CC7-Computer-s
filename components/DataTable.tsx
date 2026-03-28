@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
+import { Skeleton } from "@/components/Skeleton";
 
 export type DataTableColumn<T> = {
   key: string;
@@ -12,11 +13,15 @@ export type DataTableColumn<T> = {
 export function DataTable<T>({
   rows,
   columns,
-  emptyLabel = "No records found."
+  emptyLabel = "No records found.",
+  loading = false,
+  skeletonRowCount = 6
 }: {
   rows: T[];
   columns: Array<DataTableColumn<T>>;
   emptyLabel?: string;
+  loading?: boolean;
+  skeletonRowCount?: number;
 }) {
   const colCount = columns.length;
   const headers = useMemo(() => columns.map((c) => c.header), [columns]);
@@ -38,7 +43,17 @@ export function DataTable<T>({
             </tr>
           </thead>
           <tbody className="divide-y divide-dark/10 dark:divide-light/10">
-            {rows.length === 0 ? (
+            {loading ? (
+              Array.from({ length: skeletonRowCount }).map((_, idx) => (
+                <tr key={`sk-${idx}`}>
+                  {columns.map((col) => (
+                    <td key={col.key} className={["px-4 py-3 text-sm", col.className ?? ""].join(" ")}>
+                      <Skeleton className="h-4 w-full" />
+                    </td>
+                  ))}
+                </tr>
+              ))
+            ) : rows.length === 0 ? (
               <tr>
                 <td colSpan={colCount} className="px-4 py-8 text-center text-sm font-semibold text-dark/60 dark:text-light/60">
                   {emptyLabel}
@@ -61,4 +76,3 @@ export function DataTable<T>({
     </div>
   );
 }
-

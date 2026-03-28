@@ -1,8 +1,9 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { ProductCard } from "@/components/ProductCard";
+import { Skeleton } from "@/components/Skeleton";
 import { BRANDS, PRODUCT_CATEGORIES, PRODUCT_CONDITIONS, PRODUCTS, formatNgn } from "@/lib/products";
 import { ProductCategory, ProductCondition } from "@/types/product";
 
@@ -22,6 +23,7 @@ export default function ShopPage() {
   const priceCeiling = useMemo(() => Math.max(...PRODUCTS.map((p) => p.priceNgn)), []);
   const [visibleCount, setVisibleCount] = useState(8);
   const [filtersOpen, setFiltersOpen] = useState(false);
+  const [showSkeleton, setShowSkeleton] = useState(true);
   const [filters, setFilters] = useState<Filters>({
     search: "",
     category: "all",
@@ -29,6 +31,11 @@ export default function ShopPage() {
     condition: "all",
     maxPriceNgn: null
   });
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => setShowSkeleton(false), 350);
+    return () => window.clearTimeout(timer);
+  }, []);
 
   const filteredProducts = useMemo(() => {
     const query = normalizeText(filters.search);
@@ -213,7 +220,28 @@ export default function ShopPage() {
           </aside>
 
           <section className="flex flex-col gap-6">
-            {visibleProducts.length > 0 ? (
+            {showSkeleton ? (
+              <div className="grid grid-cols-2 gap-5 md:grid-cols-3 lg:grid-cols-4">
+                {Array.from({ length: 8 }).map((_, idx) => (
+                  <div
+                    key={`sk-${idx}`}
+                    className="overflow-hidden rounded-2xl border border-dark/10 bg-white shadow-sm dark:border-light/10 dark:bg-dark"
+                  >
+                    <Skeleton className="aspect-[4/3] w-full rounded-none" />
+                    <div className="p-5">
+                      <Skeleton className="h-4 w-3/4" />
+                      <div className="mt-2">
+                        <Skeleton className="h-3 w-1/2" />
+                      </div>
+                      <div className="mt-4 flex items-end justify-between gap-3">
+                        <Skeleton className="h-6 w-24" />
+                        <Skeleton className="h-10 w-24" />
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : visibleProducts.length > 0 ? (
               <div className="grid grid-cols-2 gap-5 md:grid-cols-3 lg:grid-cols-4">
                 {visibleProducts.map((product) => (
                   <ProductCard key={product.id} product={product} />

@@ -5,6 +5,7 @@ import { DataTable, DataTableColumn } from "@/components/DataTable";
 import { formatNgn } from "@/lib/products";
 import { getFirebaseClientAsync } from "@/lib/firebase";
 import type { Order, OrderStatus } from "@/types/order";
+import { toast } from "sonner";
 
 type OrderRow = Order & { docId: string };
 
@@ -79,9 +80,10 @@ export default function DashboardOrdersPage() {
       const { doc, serverTimestamp, updateDoc } = await import("firebase/firestore");
       await updateDoc(doc(db, "orders", order.docId), { status, updatedAt: serverTimestamp() });
       setRows((prev) => prev.map((o) => (o.docId === order.docId ? { ...o, status } : o)));
+      toast.success("Order updated", { description: `Status set to ${status}` });
     } catch (e) {
       console.error(e);
-      alert("Failed to update order status.");
+      toast.error("Update failed", { description: "Failed to update order status." });
     }
   }
 
@@ -145,7 +147,7 @@ export default function DashboardOrdersPage() {
         </div>
       </div>
 
-      <DataTable rows={rows} columns={columns} emptyLabel={loading ? "Loading…" : "No orders yet."} />
+      <DataTable rows={rows} columns={columns} emptyLabel={loading ? "Loading…" : "No orders yet."} loading={loading} />
     </div>
   );
 }

@@ -7,7 +7,8 @@ import { useCart } from "@/hooks/useCart";
 import { useTheme } from "@/hooks/useTheme";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRole } from "@/hooks/useRole";
-import { CartIcon, CloseIcon, MenuIcon, MoonIcon, SunIcon, SearchIcon, UserIcon } from "@/components/icons";
+import { useWhatsApp } from "@/contexts/WhatsAppModalContext";
+import { CartIcon, CloseIcon, MenuIcon, MoonIcon, SunIcon, SearchIcon, UserIcon, WhatsAppIcon } from "@/components/icons";
 
 type NavItem = {
   href: string;
@@ -48,6 +49,7 @@ export function Navbar() {
   const { theme, toggleTheme } = useTheme();
   const { user, logout } = useAuth();
   const { isStaff } = useRole();
+  const { open: openWhatsApp } = useWhatsApp();
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -110,6 +112,15 @@ export function Navbar() {
             {badge}
           </Link>
 
+          <button
+            type="button"
+            onClick={() => openWhatsApp("speak_sales")}
+            className="hidden md:inline-flex h-10 items-center gap-2 rounded-full bg-[#25D366] px-4 text-sm font-extrabold text-white ring-2 ring-primary-yellow transition hover:brightness-110"
+          >
+            <WhatsAppIcon className="h-5 w-5" />
+            Chat with CC7
+          </button>
+
           {user ? (
             <div className="relative" ref={dropdownRef}>
               <button
@@ -168,9 +179,23 @@ export function Navbar() {
             {NAV_ITEMS.map((item) => (
               <NavLink key={item.href} {...item} onClick={() => setMobileOpen(false)} />
             ))}
+            <button
+              type="button"
+              onClick={() => {
+                setMobileOpen(false);
+                openWhatsApp("speak_sales");
+              }}
+              className="rounded-full px-3 py-2 text-left text-sm font-semibold text-primary-blue hover:bg-white/60 hover:dark:bg-white/10"
+            >
+              Chat with CC7
+            </button>
             <div className="h-px w-full bg-dark/10 dark:bg-light/10 my-2" />
             {user ? (
-              <NavLink href="/dashboard" label="Dashboard" onClick={() => setMobileOpen(false)} />
+              <NavLink
+                href={isStaff ? "/dashboard" : "/account"}
+                label={isStaff ? "Staff Dashboard" : "My Account"}
+                onClick={() => setMobileOpen(false)}
+              />
             ) : (
               <NavLink href="/login" label="Log In" onClick={() => setMobileOpen(false)} />
             )}

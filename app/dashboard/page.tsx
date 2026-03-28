@@ -166,7 +166,12 @@ export default function DashboardOverviewPage() {
               View all →
             </Link>
           </div>
-          <DataTable rows={recentOrders} columns={orderColumns} emptyLabel={loading ? "Loading…" : "No orders yet."} />
+          <DataTable
+            rows={recentOrders}
+            columns={orderColumns}
+            emptyLabel={loading ? "Loading…" : "No orders yet."}
+            loading={loading}
+          />
         </div>
 
         <div className="flex flex-col gap-3">

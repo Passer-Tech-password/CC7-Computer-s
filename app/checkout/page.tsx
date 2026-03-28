@@ -8,6 +8,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { RepairStepper } from "@/components/RepairStepper";
 import { formatNgn } from "@/lib/products";
 import { calcDeliveryFee, calcSubtotal, generateOrderNumber, saveOrder } from "@/lib/orders";
+import { toast } from "sonner";
 
 const STEPS = [
   { key: "review", label: "Review Cart" },
@@ -72,7 +73,7 @@ export default function CheckoutPage() {
       router.push(`/success?order=${encodeURIComponent(orderNumber)}&id=${encodeURIComponent(orderId)}`);
     } catch (err) {
       console.error(err);
-      alert("Payment simulation failed. Please try again.");
+      toast.error("Payment failed", { description: "Paystack simulation failed. Please try again." });
     } finally {
       setLoading(false);
     }

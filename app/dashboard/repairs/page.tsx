@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { DataTable, DataTableColumn } from "@/components/DataTable";
 import { getFirebaseClientAsync } from "@/lib/firebase";
 import type { RepairJob, RepairJobStatus } from "@/types/repairJob";
+import { toast } from "sonner";
 
 type RepairRow = RepairJob & { docId: string };
 
@@ -88,9 +89,10 @@ export default function DashboardRepairsPage() {
       await updateDoc(doc(db, "repair_jobs", row.docId), { ...patch, updatedAt: serverTimestamp() });
       setRows((prev) => prev.map((r) => (r.docId === row.docId ? { ...r, ...patch } : r)));
       setDetail((prev) => (prev && prev.docId === row.docId ? { ...prev, ...patch } : prev));
+      if (patch.status) toast.success("Repair job updated", { description: `Status set to ${patch.status}` });
     } catch (e) {
       console.error(e);
-      alert("Failed to update repair job.");
+      toast.error("Update failed", { description: "Failed to update repair job." });
     } finally {
       setSaving(false);
     }
@@ -183,7 +185,12 @@ export default function DashboardRepairsPage() {
         </div>
       </div>
 
-      <DataTable rows={rows} columns={columns} emptyLabel={loading ? "Loading…" : "No repair jobs yet."} />
+      <DataTable
+        rows={rows}
+        columns={columns}
+        emptyLabel={loading ? "Loading…" : "No repair jobs yet."}
+        loading={loading}
+      />
 
       {detail ? (
         <div className="fixed inset-0 z-50 bg-black/60 p-4" role="dialog" aria-modal="true">
@@ -280,4 +287,3 @@ export default function DashboardRepairsPage() {
     </div>
   );
 }
-

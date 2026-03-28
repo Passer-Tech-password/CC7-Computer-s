@@ -6,6 +6,7 @@ import { DataTable, DataTableColumn } from "@/components/DataTable";
 import { formatNgn } from "@/lib/products";
 import { getFirebaseClientAsync } from "@/lib/firebase";
 import type { Product, ProductCategory, ProductCondition } from "@/types/product";
+import { toast } from "sonner";
 
 type ProductRow = Product & { docId: string };
 
@@ -170,7 +171,7 @@ export default function DashboardProductsPage() {
       await refresh();
     } catch (e) {
       console.error(e);
-      alert("Failed to save product.");
+      toast.error("Save failed", { description: "Failed to save product." });
     } finally {
       setSaving(false);
     }
@@ -186,7 +187,7 @@ export default function DashboardProductsPage() {
       await refresh();
     } catch (e) {
       console.error(e);
-      alert("Failed to delete product.");
+      toast.error("Delete failed", { description: "Failed to delete product." });
     }
   }
 
@@ -296,7 +297,7 @@ export default function DashboardProductsPage() {
         </div>
       ) : null}
 
-      <DataTable rows={rows} columns={columns} emptyLabel={loading ? "Loading…" : "No products yet."} />
+      <DataTable rows={rows} columns={columns} emptyLabel={loading ? "Loading…" : "No products yet."} loading={loading} />
 
       {modalOpen ? (
         <div className="fixed inset-0 z-50 bg-black/60 p-4" role="dialog" aria-modal="true">
@@ -431,4 +432,3 @@ export default function DashboardProductsPage() {
     </div>
   );
 }
-

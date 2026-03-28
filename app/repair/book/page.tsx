@@ -5,6 +5,8 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { RepairStepper } from "@/components/RepairStepper";
 import { useAuth } from "@/contexts/AuthContext";
+import { getFirebaseClientAsync } from "@/lib/firebase";
+import { toast } from "sonner";
 
 type DeviceType = "Laptop" | "Desktop" | "Phone" | "Tablet" | "Other";
 type DeviceCondition = "New" | "Fairly Used" | "Refurbished";
@@ -111,8 +113,39 @@ export default function RepairBookingPage() {
   }
 
   async function submit() {
+    if (!user) {
+      toast.error("Please log in", { description: "Log in to submit a repair request and track it later." });
+      router.push("/login");
+      return;
+    }
+
     const jobNumber = generateJobNumber();
-    setSubmittedJobNumber(jobNumber);
+    try {
+      const { db } = await getFirebaseClientAsync();
+      const { addDoc, collection, serverTimestamp } = await import("firebase/firestore");
+      await addDoc(collection(db, "repair_jobs"), {
+        jobNumber,
+        userUid: user.uid,
+        customerName: draft.customerName || user.displayName || "Customer",
+        customerPhone: draft.customerPhone || "",
+        deviceType: draft.deviceType,
+        brand: draft.brand,
+        model: draft.model,
+        status: "pending",
+        technicianName: "",
+        beforeNotes: `Condition: ${draft.condition}\nSerial: ${draft.serialNumber || "N/A"}\n\nIssues: ${
+          draft.issues.length ? draft.issues.join(", ") : "N/A"
+        }\n\nDescription:\n${draft.issueDescription || "N/A"}`,
+        afterNotes: "",
+        createdAtMs: Date.now(),
+        createdAt: serverTimestamp()
+      });
+      toast.success("Repair request submitted", { description: `Job number: ${jobNumber}` });
+      setSubmittedJobNumber(jobNumber);
+    } catch (e) {
+      console.error(e);
+      toast.error("Submission failed", { description: "Please try again. Check network/Firestore rules." });
+    }
   }
 
   if (submittedJobNumber) {
