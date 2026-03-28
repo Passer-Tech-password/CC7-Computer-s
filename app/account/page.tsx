@@ -133,6 +133,7 @@ export default function AccountPage() {
           displayName: profileName.trim() || user.displayName || "Customer",
           phone: profilePhone.trim() || "",
           role: userData?.role ?? "customer",
+          createdAtMs: userData?.createdAtMs ?? Date.now(),
           updatedAt: serverTimestamp()
         },
         { merge: true }
