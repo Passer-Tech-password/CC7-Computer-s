@@ -9,6 +9,8 @@ import { RepairStepper } from "@/components/RepairStepper";
 import { formatNgn } from "@/lib/products";
 import { calcDeliveryFee, calcSubtotal, generateOrderNumber, saveOrder } from "@/lib/orders";
 import { toast } from "sonner";
+import { isApiEnabled } from "@/lib/api-client";
+import { createOrder as apiCreateOrder } from "@/lib/api";
 
 const STEPS = [
   { key: "review", label: "Review Cart" },
@@ -46,6 +48,38 @@ export default function CheckoutPage() {
     if (items.length === 0) return;
     setLoading(true);
     try {
+      if (isApiEnabled()) {
+        try {
+          const created = await apiCreateOrder({
+            userUid: user?.uid || null,
+            items: items.map((i) => ({
+              productId: i.productId,
+              name: i.name,
+              brand: i.brand,
+              model: i.model,
+              imageUrl: i.imageUrl,
+              priceNgn: i.priceNgn,
+              quantity: i.quantity
+            })),
+            subtotalNgn: subtotal,
+            deliveryFeeNgn: deliveryFee,
+            totalNgn: total,
+            pickup,
+            customerName: name,
+            customerEmail: email,
+            customerPhone: phone || undefined,
+            note: note || undefined
+          });
+          setItemsDirect([]);
+          toast.success("Order confirmed", { description: `Order number: ${created.orderNumber}` });
+          router.push(`/success?order=${encodeURIComponent(created.orderNumber)}&id=${encodeURIComponent(created.id)}`);
+          return;
+        } catch (e) {
+          console.error(e);
+          toast.error("API unavailable", { description: "Completing checkout via Firebase for now." });
+        }
+      }
+
       const orderNumber = generateOrderNumber();
       const orderId = await saveOrder({
         orderNumber,

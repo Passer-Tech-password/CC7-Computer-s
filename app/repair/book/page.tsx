@@ -7,6 +7,8 @@ import { RepairStepper } from "@/components/RepairStepper";
 import { useAuth } from "@/contexts/AuthContext";
 import { getFirebaseClientAsync } from "@/lib/firebase";
 import { toast } from "sonner";
+import { isApiEnabled } from "@/lib/api-client";
+import { createRepairJob as apiCreateRepairJob } from "@/lib/api";
 
 type DeviceType = "Laptop" | "Desktop" | "Phone" | "Tablet" | "Other";
 type DeviceCondition = "New" | "Fairly Used" | "Refurbished";
@@ -119,12 +121,37 @@ export default function RepairBookingPage() {
       return;
     }
 
-    const jobNumber = generateJobNumber();
+    const fallbackJobNumber = generateJobNumber();
+
+    try {
+      if (isApiEnabled()) {
+        const created = await apiCreateRepairJob({
+          deviceType: draft.deviceType,
+          brand: draft.brand,
+          model: draft.model,
+          serialNumber: draft.serialNumber || undefined,
+          condition: draft.condition,
+          issues: draft.issues,
+          issueDescription: draft.issueDescription,
+          customerName: draft.customerName || user.displayName || "Customer",
+          customerEmail: draft.customerEmail || user.email || "",
+          customerPhone: draft.customerPhone || undefined,
+          pickupDate: draft.pickupDate || undefined
+        });
+        toast.success("Repair request submitted", { description: `Job number: ${created.jobNumber}` });
+        setSubmittedJobNumber(created.jobNumber);
+        return;
+      }
+    } catch (e) {
+      console.error(e);
+      toast.error("API unavailable", { description: "Submitting via Firebase for now." });
+    }
+
     try {
       const { db } = await getFirebaseClientAsync();
       const { addDoc, collection, serverTimestamp } = await import("firebase/firestore");
       await addDoc(collection(db, "repair_jobs"), {
-        jobNumber,
+        jobNumber: fallbackJobNumber,
         userUid: user.uid,
         customerName: draft.customerName || user.displayName || "Customer",
         customerPhone: draft.customerPhone || "",
@@ -140,8 +167,8 @@ export default function RepairBookingPage() {
         createdAtMs: Date.now(),
         createdAt: serverTimestamp()
       });
-      toast.success("Repair request submitted", { description: `Job number: ${jobNumber}` });
-      setSubmittedJobNumber(jobNumber);
+      toast.success("Repair request submitted", { description: `Job number: ${fallbackJobNumber}` });
+      setSubmittedJobNumber(fallbackJobNumber);
     } catch (e) {
       console.error(e);
       toast.error("Submission failed", { description: "Please try again. Check network/Firestore rules." });

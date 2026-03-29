@@ -6,6 +6,9 @@ import { StatCard } from "@/components/StatCard";
 import { DataTable, DataTableColumn } from "@/components/DataTable";
 import { formatNgn } from "@/lib/products";
 import { getFirebaseClientAsync } from "@/lib/firebase";
+import { isApiEnabled } from "@/lib/api-client";
+import { adminGetOrders, adminGetProducts, adminGetRepairJobs } from "@/lib/api";
+import { toast } from "sonner";
 import type { Order } from "@/types/order";
 import type { RepairJob } from "@/types/repairJob";
 
@@ -62,6 +65,46 @@ export default function DashboardOverviewPage() {
     (async () => {
       setLoading(true);
       try {
+        if (isApiEnabled()) {
+          try {
+            const [orders, repairs, products] = await Promise.all([
+              adminGetOrders(),
+              adminGetRepairJobs(),
+              adminGetProducts()
+            ]);
+
+            const orderRows = orders
+              .slice(0, 10)
+              .map((o) => ({ id: o.id, orderNumber: o.orderNumber, status: o.status as Order["status"], totalNgn: o.totalNgn, createdAtMs: o.createdAtMs }));
+            setRecentOrders(orderRows);
+
+            const repairRows = repairs.slice(0, 10).map((r) => ({
+              id: r.id,
+              jobNumber: r.jobNumber,
+              customerName: r.customerName,
+              deviceType: r.deviceType,
+              brand: r.brand,
+              model: r.model,
+              status: r.status as RepairJob["status"],
+              createdAtMs: r.createdAtMs
+            }));
+            setRecentRepairs(repairRows);
+
+            const totalSalesNgn = orders
+              .filter((o) => o.status === "paid" || o.status === "processing" || o.status === "completed")
+              .reduce((sum, o) => sum + o.totalNgn, 0);
+            const activeOrders = orders.filter((o) => o.status === "paid" || o.status === "processing").length;
+            const pendingRepairs = repairs.filter((r) => r.status !== "completed").length;
+            const lowStockItems = products.filter((p) => p.stockCount > 0 && p.stockCount <= 5).length;
+
+            setStats({ totalSalesNgn, activeOrders, pendingRepairs, lowStockItems });
+            return;
+          } catch (e) {
+            console.error(e);
+            toast.error("API unavailable", { description: "Showing Firebase dashboard data for now." });
+          }
+        }
+
         const { db } = await getFirebaseClientAsync();
         const { collection, getDocs, limit, orderBy, query, where } = await import("firebase/firestore");
 

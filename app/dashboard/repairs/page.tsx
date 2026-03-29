@@ -5,6 +5,9 @@ import { DataTable, DataTableColumn } from "@/components/DataTable";
 import { getFirebaseClientAsync } from "@/lib/firebase";
 import type { RepairJob, RepairJobStatus } from "@/types/repairJob";
 import { toast } from "sonner";
+import { isApiEnabled } from "@/lib/api-client";
+import { adminGetRepairJobs, updateRepairStatus as apiUpdateRepairStatus } from "@/lib/api";
+import type { BackendRepairJobStatus } from "@/types/backend";
 
 type RepairRow = RepairJob & { docId: string };
 
@@ -59,6 +62,17 @@ export default function DashboardRepairsPage() {
   async function refresh() {
     setLoading(true);
     try {
+      if (isApiEnabled()) {
+        try {
+          const apiRepairs = await adminGetRepairJobs(filter === "all" ? undefined : (filter as BackendRepairJobStatus));
+          setRows(apiRepairs.map((r) => ({ ...(r as unknown as RepairJob), docId: r.id })));
+          return;
+        } catch (e) {
+          console.error(e);
+          toast.error("API unavailable", { description: "Showing Firebase repair jobs for now." });
+        }
+      }
+
       const { db } = await getFirebaseClientAsync();
       const { collection, getDocs, limit, orderBy, query, where } = await import("firebase/firestore");
       const base = query(collection(db, "repair_jobs"), orderBy("createdAtMs", "desc"), limit(300));
@@ -84,6 +98,19 @@ export default function DashboardRepairsPage() {
   async function updateRow(row: RepairRow, patch: Partial<Pick<RepairRow, "status" | "technicianName" | "beforeNotes" | "afterNotes">>) {
     setSaving(true);
     try {
+      if (isApiEnabled() && patch.status) {
+        try {
+          await apiUpdateRepairStatus(row.id, patch.status as BackendRepairJobStatus);
+          setRows((prev) => prev.map((r) => (r.docId === row.docId ? { ...r, ...patch } : r)));
+          setDetail((prev) => (prev && prev.docId === row.docId ? { ...prev, ...patch } : prev));
+          toast.success("Repair job updated", { description: `Status set to ${patch.status}` });
+          return;
+        } catch (e) {
+          console.error(e);
+          toast.error("API update failed", { description: "Updating via Firebase for now." });
+        }
+      }
+
       const { db } = await getFirebaseClientAsync();
       const { doc, serverTimestamp, updateDoc } = await import("firebase/firestore");
       await updateDoc(doc(db, "repair_jobs", row.docId), { ...patch, updatedAt: serverTimestamp() });

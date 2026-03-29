@@ -6,6 +6,9 @@ import { useSearchParams } from "next/navigation";
 import { RepairStepper } from "@/components/RepairStepper";
 import { getRepairJob, getRepairStageIndex, REPAIR_STAGES } from "@/lib/repairs";
 import { getFirebaseClientAsync } from "@/lib/firebase";
+import { isApiEnabled } from "@/lib/api-client";
+import { getRepairJobByNumber as apiGetRepairJobByNumber } from "@/lib/api";
+import { toast } from "sonner";
 
 function formatDate(iso: string) {
   try {
@@ -83,6 +86,29 @@ export function RepairTrackClient() {
       setJobLoading(true);
       try {
         const normalized = submitted.trim().toUpperCase();
+
+        if (isApiEnabled()) {
+          try {
+            const apiJob = await apiGetRepairJobByNumber(normalized);
+            setLiveJob({
+              jobNumber: apiJob.jobNumber,
+              deviceType: apiJob.deviceType,
+              brand: apiJob.brand,
+              model: apiJob.model,
+              serialNumber: apiJob.serialNumber,
+              issueSummary: apiJob.beforeNotes ?? "Repair in progress",
+              stage: mapStatusToStage(apiJob.status),
+              estimatedCompletionISO:
+                apiJob.estimatedCompletionISO ?? addDaysISO(apiJob.createdAtMs ?? Date.now(), 3),
+              technicianName: apiJob.technicianName ?? "CC7 Technician"
+            });
+            return;
+          } catch (e) {
+            console.error(e);
+            toast.error("API unavailable", { description: "Showing Firebase/demo tracking for now." });
+          }
+        }
+
         const { db } = await getFirebaseClientAsync();
         const { collection, getDocs, limit, query, where } = await import("firebase/firestore");
         const snap = await getDocs(query(collection(db, "repair_jobs"), where("jobNumber", "==", normalized), limit(1)));

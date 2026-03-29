@@ -9,6 +9,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useRole } from "@/hooks/useRole";
 import { useWhatsApp } from "@/contexts/WhatsAppModalContext";
 import { CartIcon, CloseIcon, MenuIcon, MoonIcon, SunIcon, SearchIcon, UserIcon, WhatsAppIcon } from "@/components/icons";
+import { isApiEnabled } from "@/lib/api-client";
 
 type NavItem = {
   href: string;
@@ -51,6 +52,7 @@ export function Navbar() {
   const { isStaff } = useRole();
   const { open: openWhatsApp } = useWhatsApp();
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const apiReady = isApiEnabled();
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -81,6 +83,11 @@ export function Navbar() {
           <span className="text-sm font-bold text-primary-blue tracking-widest hidden sm:inline pt-1">
             COMPUTERS
           </span>
+          {apiReady ? (
+            <span className="ml-2 hidden rounded-full bg-primary-yellow/25 px-3 py-1 text-xs font-extrabold text-yellow-800 dark:text-primary-yellow sm:inline">
+              API Ready
+            </span>
+          ) : null}
         </Link>
 
         <nav className="hidden items-center gap-1 md:flex" aria-label="Primary">

@@ -6,6 +6,9 @@ import { formatNgn } from "@/lib/products";
 import { getFirebaseClientAsync } from "@/lib/firebase";
 import type { Order, OrderStatus } from "@/types/order";
 import { toast } from "sonner";
+import { isApiEnabled } from "@/lib/api-client";
+import { adminGetOrders, updateOrderStatus as apiUpdateOrderStatus } from "@/lib/api";
+import type { BackendOrderStatus } from "@/types/backend";
 
 type OrderRow = Order & { docId: string };
 
@@ -55,6 +58,17 @@ export default function DashboardOrdersPage() {
   async function refresh() {
     setLoading(true);
     try {
+      if (isApiEnabled()) {
+        try {
+          const apiOrders = await adminGetOrders(filter === "all" ? undefined : (filter as BackendOrderStatus));
+          setRows(apiOrders.map((o) => ({ ...(o as unknown as Order), docId: o.id })));
+          return;
+        } catch (e) {
+          console.error(e);
+          toast.error("API unavailable", { description: "Showing Firebase orders for now." });
+        }
+      }
+
       const { db } = await getFirebaseClientAsync();
       const { collection, getDocs, limit, orderBy, query, where } = await import("firebase/firestore");
       const base = query(collection(db, "orders"), orderBy("createdAtMs", "desc"), limit(300));
@@ -76,6 +90,18 @@ export default function DashboardOrdersPage() {
 
   async function updateStatus(order: OrderRow, status: OrderStatus) {
     try {
+      if (isApiEnabled()) {
+        try {
+          await apiUpdateOrderStatus(order.id, status as BackendOrderStatus);
+          setRows((prev) => prev.map((o) => (o.docId === order.docId ? { ...o, status } : o)));
+          toast.success("Order updated", { description: `Status set to ${status}` });
+          return;
+        } catch (e) {
+          console.error(e);
+          toast.error("API update failed", { description: "Updating via Firebase for now." });
+        }
+      }
+
       const { db } = await getFirebaseClientAsync();
       const { doc, serverTimestamp, updateDoc } = await import("firebase/firestore");
       await updateDoc(doc(db, "orders", order.docId), { status, updatedAt: serverTimestamp() });

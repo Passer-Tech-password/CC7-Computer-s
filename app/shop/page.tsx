@@ -4,8 +4,12 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { ProductCard } from "@/components/ProductCard";
 import { Skeleton } from "@/components/Skeleton";
-import { BRANDS, PRODUCT_CATEGORIES, PRODUCT_CONDITIONS, PRODUCTS, formatNgn } from "@/lib/products";
-import { ProductCategory, ProductCondition } from "@/types/product";
+import { PRODUCT_CATEGORIES, PRODUCT_CONDITIONS, PRODUCTS, formatNgn } from "@/lib/products";
+import type { Product, ProductCategory, ProductCondition } from "@/types/product";
+import { toast } from "sonner";
+import { isApiEnabled } from "@/lib/api-client";
+import { getProducts as apiGetProducts } from "@/lib/api";
+import { fetchProductsFromFirestore } from "@/lib/firebase-data";
 
 type Filters = {
   search: string;
@@ -20,7 +24,9 @@ function normalizeText(value: string) {
 }
 
 export default function ShopPage() {
-  const priceCeiling = useMemo(() => Math.max(...PRODUCTS.map((p) => p.priceNgn)), []);
+  const [products, setProducts] = useState<Product[]>(PRODUCTS);
+  const [productsLoading, setProductsLoading] = useState(true);
+  const priceCeiling = useMemo(() => Math.max(...products.map((p) => p.priceNgn), 0), [products]);
   const [visibleCount, setVisibleCount] = useState(8);
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [showSkeleton, setShowSkeleton] = useState(true);
@@ -37,9 +43,38 @@ export default function ShopPage() {
     return () => window.clearTimeout(timer);
   }, []);
 
+  useEffect(() => {
+    (async () => {
+      setProductsLoading(true);
+      try {
+        if (isApiEnabled()) {
+          const apiProducts = await apiGetProducts();
+          if (Array.isArray(apiProducts) && apiProducts.length > 0) {
+            setProducts(apiProducts as unknown as Product[]);
+            setProductsLoading(false);
+            return;
+          }
+        }
+      } catch (e) {
+        console.error(e);
+        toast.error("API unavailable", { description: "Showing Firebase/demo products for now." });
+      }
+
+      try {
+        const fbProducts = await fetchProductsFromFirestore();
+        if (fbProducts.length > 0) setProducts(fbProducts);
+      } catch (e) {
+        console.error(e);
+      } finally {
+        setProductsLoading(false);
+      }
+    })();
+  }, []);
+
   const filteredProducts = useMemo(() => {
     const query = normalizeText(filters.search);
-    return PRODUCTS.filter((p) => {
+    return products
+      .filter((p) => {
       if (filters.category !== "all" && p.category !== filters.category) return false;
       if (filters.brand !== "all" && p.brand !== filters.brand) return false;
       if (filters.condition !== "all" && p.condition !== filters.condition) return false;
@@ -47,8 +82,9 @@ export default function ShopPage() {
       if (!query) return true;
       const haystack = `${p.name} ${p.brand} ${p.model}`.toLowerCase();
       return haystack.includes(query);
-    }).sort((a, b) => b.createdAtMs - a.createdAtMs);
-  }, [filters]);
+      })
+      .sort((a, b) => b.createdAtMs - a.createdAtMs);
+  }, [filters, products]);
 
   const visibleProducts = useMemo(
     () => filteredProducts.slice(0, visibleCount),
@@ -108,7 +144,9 @@ export default function ShopPage() {
             className="w-full rounded-xl border border-dark/15 bg-white px-3 py-2 text-sm font-semibold text-dark outline-none focus:ring-2 focus:ring-primary-blue dark:border-light/15 dark:bg-[#0b1220] dark:text-light"
           >
             <option value="all">All</option>
-            {BRANDS.map((brand) => (
+            {Array.from(new Set(products.map((p) => p.brand)))
+              .sort((a, b) => a.localeCompare(b))
+              .map((brand) => (
               <option key={brand} value={brand}>
                 {brand}
               </option>
@@ -220,7 +258,7 @@ export default function ShopPage() {
           </aside>
 
           <section className="flex flex-col gap-6">
-            {showSkeleton ? (
+            {showSkeleton || productsLoading ? (
               <div className="grid grid-cols-2 gap-5 md:grid-cols-3 lg:grid-cols-4">
                 {Array.from({ length: 8 }).map((_, idx) => (
                   <div

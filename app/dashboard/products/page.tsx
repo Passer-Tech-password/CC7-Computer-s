@@ -7,6 +7,9 @@ import { formatNgn } from "@/lib/products";
 import { getFirebaseClientAsync } from "@/lib/firebase";
 import type { Product, ProductCategory, ProductCondition } from "@/types/product";
 import { toast } from "sonner";
+import { isApiEnabled } from "@/lib/api-client";
+import { adminDeleteProduct, adminGetProducts, adminUpsertProduct } from "@/lib/api";
+import type { BackendProduct } from "@/types/backend";
 
 type ProductRow = Product & { docId: string };
 
@@ -86,6 +89,15 @@ function defaultDraft(): ProductDraft {
   };
 }
 
+function makeProductId(input: string) {
+  return input
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/(^-|-$)/g, "")
+    .slice(0, 60);
+}
+
 export default function DashboardProductsPage() {
   const [loading, setLoading] = useState(true);
   const [rows, setRows] = useState<ProductRow[]>([]);
@@ -100,6 +112,17 @@ export default function DashboardProductsPage() {
     setLoading(true);
     setError(null);
     try {
+      if (isApiEnabled()) {
+        try {
+          const apiProducts = await adminGetProducts();
+          setRows(apiProducts.map((p) => ({ ...(p as unknown as Product), docId: p.id })));
+          return;
+        } catch (e) {
+          console.error(e);
+          toast.error("API unavailable", { description: "Showing Firebase products for now." });
+        }
+      }
+
       const { db } = await getFirebaseClientAsync();
       const { collection, getDocs, limit, orderBy, query } = await import("firebase/firestore");
       const snap = await getDocs(query(collection(db, "products"), orderBy("createdAtMs", "desc"), limit(500)));
@@ -144,10 +167,44 @@ export default function DashboardProductsPage() {
     if (!draft.name.trim() || !draft.brand.trim() || !draft.model.trim() || !draft.imageUrl.trim()) return;
     setSaving(true);
     try {
+      const id =
+        editing?.id ??
+        makeProductId(`${draft.brand}-${draft.model}`) ||
+        makeProductId(draft.name) ||
+        `cc7-${Date.now()}`;
+
+      if (isApiEnabled()) {
+        try {
+          const apiProduct: BackendProduct = {
+            id,
+            name: draft.name.trim(),
+            brand: draft.brand.trim(),
+            model: draft.model.trim(),
+            category: draft.category,
+            condition: draft.condition,
+            priceNgn: Number(draft.priceNgn) || 0,
+            oldPriceNgn: draft.oldPriceNgn ? Number(draft.oldPriceNgn) : undefined,
+            imageUrl: draft.imageUrl.trim(),
+            images: [],
+            stockCount: Number(draft.stockCount) || 0,
+            inStock: Boolean(draft.stockCount && draft.stockCount > 0),
+            createdAtMs: editing ? editing.createdAtMs : Date.now()
+          };
+          await adminUpsertProduct(apiProduct);
+          toast.success("Product saved");
+          setModalOpen(false);
+          await refresh();
+          return;
+        } catch (e) {
+          console.error(e);
+          toast.error("API save failed", { description: "Saving via Firebase for now." });
+        }
+      }
+
       const { db } = await getFirebaseClientAsync();
       const { addDoc, collection, doc, serverTimestamp, updateDoc } = await import("firebase/firestore");
       const payload = {
-        id: editing?.id ?? undefined,
+        id,
         name: draft.name.trim(),
         brand: draft.brand.trim(),
         model: draft.model.trim(),
@@ -181,6 +238,18 @@ export default function DashboardProductsPage() {
     const ok = window.confirm(`Delete "${p.name}"?`);
     if (!ok) return;
     try {
+      if (isApiEnabled()) {
+        try {
+          await adminDeleteProduct(p.id);
+          toast.success("Product deleted");
+          await refresh();
+          return;
+        } catch (e) {
+          console.error(e);
+          toast.error("API delete failed", { description: "Deleting via Firebase for now." });
+        }
+      }
+
       const { db } = await getFirebaseClientAsync();
       const { deleteDoc, doc } = await import("firebase/firestore");
       await deleteDoc(doc(db, "products", p.docId));

@@ -45,6 +45,7 @@ Required:
 
 Optional:
 
+- `NEXT_PUBLIC_API_URL` (PASSERTECH microservices base URL, example: `http://localhost:5000/api`)
 - `NEXT_PUBLIC_WHATSAPP_NUMBER` (format: `+2347xxxxxxxxx`)
 - `NEXT_PUBLIC_SITE_URL` (used for SEO metadataBase)
 
@@ -120,4 +121,3 @@ Note (Windows): the build script force-cleans `out/` to avoid `ENOTEMPTY` issues
 - `npm run build` – production build + static export
 - `npm run lint` – ESLint
 - `npm run typecheck` – TypeScript typecheck
-

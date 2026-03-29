@@ -2,12 +2,16 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useCartContext } from "@/contexts/CartContext";
 import { formatNgn, getStockStatus } from "@/lib/products";
 import { Product } from "@/types/product";
 import { ProductCard } from "@/components/ProductCard";
+import { isApiEnabled } from "@/lib/api-client";
+import { getProductById as apiGetProductById, getProducts as apiGetProducts } from "@/lib/api";
+import { fetchProductByIdFromFirestore } from "@/lib/firebase-data";
+import { toast } from "sonner";
 
 function HeartIcon({ filled }: { filled: boolean }) {
   return (
@@ -35,21 +39,58 @@ function ConditionBadge({ condition }: { condition: Product["condition"] }) {
 export function ProductDetailClient({ product, related }: { product: Product; related: Product[] }) {
   const router = useRouter();
   const { addItem } = useCartContext();
+  const [currentProduct, setCurrentProduct] = useState<Product>(product);
+  const [currentRelated, setCurrentRelated] = useState<Product[]>(related);
   const [wishlisted, setWishlisted] = useState(false);
   const [quantity, setQuantity] = useState(1);
   const [activeImage, setActiveImage] = useState(product.images?.[0] ?? product.imageUrl);
 
-  const status = getStockStatus(product.stockCount);
+  useEffect(() => {
+    setCurrentProduct(product);
+    setCurrentRelated(related);
+    setActiveImage(product.images?.[0] ?? product.imageUrl);
+  }, [product, related]);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        if (isApiEnabled()) {
+          const latest = await apiGetProductById(currentProduct.id);
+          setCurrentProduct(latest as unknown as Product);
+          const rel = await apiGetProducts({ category: latest.category });
+          setCurrentRelated(
+            rel
+              .filter((p) => p.id !== latest.id)
+              .slice(0, 4) as unknown as Product[]
+          );
+          return;
+        }
+      } catch (e) {
+        console.error(e);
+        toast.error("API unavailable", { description: "Showing Firebase/demo product details for now." });
+      }
+
+      try {
+        const fb = await fetchProductByIdFromFirestore(currentProduct.id);
+        if (fb) setCurrentProduct(fb);
+      } catch (e) {
+        console.error(e);
+      }
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentProduct.id]);
+
+  const status = getStockStatus(currentProduct.stockCount);
   const canBuy = status !== "out_of_stock";
 
   const price = useMemo(() => {
     return {
-      current: formatNgn(product.priceNgn),
-      old: product.oldPriceNgn ? formatNgn(product.oldPriceNgn) : null
+      current: formatNgn(currentProduct.priceNgn),
+      old: currentProduct.oldPriceNgn ? formatNgn(currentProduct.oldPriceNgn) : null
     };
-  }, [product.priceNgn, product.oldPriceNgn]);
+  }, [currentProduct.priceNgn, currentProduct.oldPriceNgn]);
 
-  const specsEntries = useMemo(() => Object.entries(product.specs ?? {}), [product.specs]);
+  const specsEntries = useMemo(() => Object.entries(currentProduct.specs ?? {}), [currentProduct.specs]);
 
   function clampQty(value: number) {
     if (!Number.isFinite(value)) return 1;
@@ -64,7 +105,7 @@ export function ProductDetailClient({ product, related }: { product: Product; re
             Shop
           </Link>
           <span>/</span>
-          <span className="truncate">{product.brand}</span>
+          <span className="truncate">{currentProduct.brand}</span>
         </div>
       </div>
 
@@ -74,14 +115,14 @@ export function ProductDetailClient({ product, related }: { product: Product; re
             <div className="relative aspect-[4/3] w-full overflow-hidden bg-dark/5 dark:bg-light/5">
               <img
                 src={activeImage}
-                alt={product.name}
+                alt={currentProduct.name}
                 className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
               />
               <div className="absolute left-4 top-4 flex items-center gap-2">
                 <span className="rounded-full bg-primary-blue/15 px-3 py-1 text-xs font-extrabold text-primary-blue">
-                  {product.brand}
+                  {currentProduct.brand}
                 </span>
-                <ConditionBadge condition={product.condition} />
+                <ConditionBadge condition={currentProduct.condition} />
               </div>
               <button
                 type="button"
@@ -94,9 +135,9 @@ export function ProductDetailClient({ product, related }: { product: Product; re
             </div>
           </div>
 
-          {product.images && product.images.length > 1 ? (
+          {currentProduct.images && currentProduct.images.length > 1 ? (
             <div className="grid grid-cols-4 gap-3">
-              {product.images.slice(0, 4).map((src) => (
+              {currentProduct.images.slice(0, 4).map((src) => (
                 <button
                   key={src}
                   type="button"
@@ -120,9 +161,9 @@ export function ProductDetailClient({ product, related }: { product: Product; re
           <div className="card">
             <div className="flex items-start justify-between gap-4">
               <div className="min-w-0">
-                <h1 className="text-3xl font-black text-dark dark:text-light">{product.name}</h1>
+                <h1 className="text-3xl font-black text-dark dark:text-light">{currentProduct.name}</h1>
                 <p className="mt-2 text-sm font-semibold text-dark/70 dark:text-light/70">
-                  <span className="font-extrabold text-primary-blue">{product.brand}</span> • {product.model}
+                  <span className="font-extrabold text-primary-blue">{currentProduct.brand}</span> • {currentProduct.model}
                 </p>
               </div>
 
@@ -178,7 +219,7 @@ export function ProductDetailClient({ product, related }: { product: Product; re
                 <button
                   type="button"
                   disabled={!canBuy}
-                  onClick={() => addItem(product, quantity)}
+                  onClick={() => addItem(currentProduct, quantity)}
                   className={[
                     "btn inline-flex w-full rounded-2xl py-4 text-base font-black",
                     canBuy
@@ -193,7 +234,7 @@ export function ProductDetailClient({ product, related }: { product: Product; re
                   type="button"
                   disabled={!canBuy}
                   onClick={() => {
-                    addItem(product, quantity);
+                    addItem(currentProduct, quantity);
                     router.push("/cart");
                   }}
                   className={[
@@ -212,7 +253,7 @@ export function ProductDetailClient({ product, related }: { product: Product; re
           <div className="card">
             <h2 className="text-xl font-extrabold text-dark dark:text-light">Description</h2>
             <p className="mt-3 text-sm font-semibold leading-relaxed text-dark/75 dark:text-light/75">
-              {product.description ??
+              {currentProduct.description ??
                 "Premium quality product from CC7 Computers. We test and verify all devices for performance and reliability."}
             </p>
           </div>
@@ -253,7 +294,7 @@ export function ProductDetailClient({ product, related }: { product: Product; re
         </div>
 
         <div className="grid grid-cols-2 gap-5 md:grid-cols-3 lg:grid-cols-4">
-          {related.map((p) => (
+          {currentRelated.map((p) => (
             <ProductCard key={p.id} product={p} />
           ))}
         </div>
@@ -261,4 +302,3 @@ export function ProductDetailClient({ product, related }: { product: Product; re
     </div>
   );
 }
-
