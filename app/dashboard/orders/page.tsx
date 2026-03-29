@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { DataTable, DataTableColumn } from "@/components/DataTable";
 import { formatNgn } from "@/lib/products";
 import { getFirebaseClientAsync } from "@/lib/firebase";
@@ -55,7 +55,7 @@ export default function DashboardOrdersPage() {
   const [rows, setRows] = useState<OrderRow[]>([]);
   const [filter, setFilter] = useState<OrderStatus | "all">("all");
 
-  async function refresh() {
+  const refresh = useCallback(async () => {
     setLoading(true);
     try {
       if (isApiEnabled()) {
@@ -82,11 +82,11 @@ export default function DashboardOrdersPage() {
     } finally {
       setLoading(false);
     }
-  }
+  }, [filter]);
 
   useEffect(() => {
     refresh();
-  }, [filter]);
+  }, [refresh]);
 
   async function updateStatus(order: OrderRow, status: OrderStatus) {
     try {

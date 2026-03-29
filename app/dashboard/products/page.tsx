@@ -1,7 +1,6 @@
-/* eslint-disable @next/next/no-img-element */
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { DataTable, DataTableColumn } from "@/components/DataTable";
 import { formatNgn } from "@/lib/products";
 import { getFirebaseClientAsync } from "@/lib/firebase";
@@ -108,7 +107,7 @@ export default function DashboardProductsPage() {
   const [editing, setEditing] = useState<ProductRow | null>(null);
   const [draft, setDraft] = useState<ProductDraft>(defaultDraft());
 
-  async function refresh() {
+  const refresh = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
@@ -134,11 +133,11 @@ export default function DashboardProductsPage() {
     } finally {
       setLoading(false);
     }
-  }
+  }, []);
 
   useEffect(() => {
     refresh();
-  }, []);
+  }, [refresh]);
 
   function openNew() {
     setEditing(null);
@@ -146,7 +145,7 @@ export default function DashboardProductsPage() {
     setModalOpen(true);
   }
 
-  function openEdit(p: ProductRow) {
+  const openEdit = useCallback((p: ProductRow) => {
     setEditing(p);
     setDraft({
       name: p.name,
@@ -161,7 +160,7 @@ export default function DashboardProductsPage() {
       inStock: p.inStock
     });
     setModalOpen(true);
-  }
+  }, []);
 
   async function save() {
     if (!draft.name.trim() || !draft.brand.trim() || !draft.model.trim() || !draft.imageUrl.trim()) return;
@@ -169,9 +168,7 @@ export default function DashboardProductsPage() {
     try {
       const id =
         editing?.id ??
-        makeProductId(`${draft.brand}-${draft.model}`) ||
-        makeProductId(draft.name) ||
-        `cc7-${Date.now()}`;
+        (makeProductId(`${draft.brand}-${draft.model}`) || makeProductId(draft.name) || `cc7-${Date.now()}`);
 
       if (isApiEnabled()) {
         try {
@@ -234,7 +231,7 @@ export default function DashboardProductsPage() {
     }
   }
 
-  async function removeProduct(p: ProductRow) {
+  const removeProduct = useCallback(async (p: ProductRow) => {
     const ok = window.confirm(`Delete "${p.name}"?`);
     if (!ok) return;
     try {
@@ -258,7 +255,7 @@ export default function DashboardProductsPage() {
       console.error(e);
       toast.error("Delete failed", { description: "Failed to delete product." });
     }
-  }
+  }, [refresh]);
 
   const columns = useMemo<Array<DataTableColumn<ProductRow>>>(
     () => [
@@ -328,7 +325,7 @@ export default function DashboardProductsPage() {
         )
       }
     ],
-    []
+    [openEdit, removeProduct]
   );
 
   return (

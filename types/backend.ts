@@ -1,7 +1,7 @@
 export type BackendUserRole = "customer" | "staff" | "admin" | "technician";
 
 export type BackendProductCondition = "new" | "fairly_used" | "refurbished";
-export type BackendProductCategory = "laptops" | "desktops" | "accessories" | "phones" | "printers";
+export type BackendProductCategory = "laptops" | "desktops" | "accessories" | "phones" | "printers" | "parts" | "other";
 
 export type BackendOrderStatus = "pending" | "paid" | "processing" | "completed" | "cancelled";
 export type BackendRepairJobStatus = "pending" | "diagnosis" | "repairing" | "ready" | "completed";
@@ -87,4 +87,3 @@ export type BackendCustomer = {
   createdAtMs: number;
   updatedAtMs?: number;
 };
-

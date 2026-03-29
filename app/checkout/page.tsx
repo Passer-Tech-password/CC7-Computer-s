@@ -75,8 +75,10 @@ export default function CheckoutPage() {
           router.push(`/success?order=${encodeURIComponent(created.orderNumber)}&id=${encodeURIComponent(created.id)}`);
           return;
         } catch (e) {
-          console.error(e);
-          toast.error("API unavailable", { description: "Completing checkout via Firebase for now." });
+          console.error("API create order failed:", e);
+          toast.error("API unavailable", {
+            description: e instanceof Error ? e.message : "Completing checkout via Firebase for now."
+          });
         }
       }
 

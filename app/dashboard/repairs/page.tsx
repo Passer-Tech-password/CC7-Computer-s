@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { DataTable, DataTableColumn } from "@/components/DataTable";
 import { getFirebaseClientAsync } from "@/lib/firebase";
 import type { RepairJob, RepairJobStatus } from "@/types/repairJob";
@@ -59,7 +59,7 @@ export default function DashboardRepairsPage() {
   const [detail, setDetail] = useState<RepairRow | null>(null);
   const [saving, setSaving] = useState(false);
 
-  async function refresh() {
+  const refresh = useCallback(async () => {
     setLoading(true);
     try {
       if (isApiEnabled()) {
@@ -89,11 +89,11 @@ export default function DashboardRepairsPage() {
     } finally {
       setLoading(false);
     }
-  }
+  }, [filter]);
 
   useEffect(() => {
     refresh();
-  }, [filter]);
+  }, [refresh]);
 
   async function updateRow(row: RepairRow, patch: Partial<Pick<RepairRow, "status" | "technicianName" | "beforeNotes" | "afterNotes">>) {
     setSaving(true);

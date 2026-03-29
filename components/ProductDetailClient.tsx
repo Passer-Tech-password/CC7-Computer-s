@@ -77,7 +77,6 @@ export function ProductDetailClient({ product, related }: { product: Product; re
         console.error(e);
       }
     })();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentProduct.id]);
 
   const status = getStockStatus(currentProduct.stockCount);
